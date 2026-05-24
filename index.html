@@ -1,13 +1,1078 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>volt</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VOLT — Gestão para Eletricistas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --y: #F5C200;
+    --y-dim: rgba(245,194,0,0.12);
+    --bg: #0d0d0d;
+    --card: #191919;
+    --card2: #222222;
+    --border: rgba(255,255,255,0.07);
+    --text: #ffffff;
+    --sec: #666666;
+    --grn: #4ADE80;
+    --grn-dim: rgba(74,222,128,0.12);
+    --red: #F87171;
+    --blu: #60A5FA;
+    --blu-dim: rgba(96,165,250,0.12);
+    --wa: #25D366;
+    --wa-dim: rgba(37,211,102,0.12);
+    --ora: #FB923C;
+    --pur: #a78bfa;
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 18px;
+  }
+
+  html, body {
+    width: 100%; min-height: 100vh;
+    background: #0a0a0a;
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    color: var(--text);
+    display: flex; align-items: flex-start; justify-content: center;
+    padding: 24px 16px 40px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  #phone {
+    width: 375px; height: 780px;
+    background: #111; border-radius: 44px;
+    border: 2px solid #2a2a2a; overflow: hidden; position: relative;
+    box-shadow: 0 60px 120px rgba(0,0,0,0.8), 0 0 0 1px #1a1a1a;
+  }
+
+  #statusbar {
+    background: var(--bg); padding: 14px 22px 6px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .time { font-size: 13px; font-weight: 700; color: var(--text); }
+  .sb-icons { display: flex; gap: 5px; align-items: center; color: var(--text); font-size: 14px; }
+
+  #appheader {
+    background: var(--bg); padding: 4px 16px 10px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { font-family: 'Syne', sans-serif; font-size: 21px; font-weight: 900; color: var(--y); letter-spacing: -0.5px; }
+
+  /* display:none por padrão — JS seta display:flex quando necessário */
+  #detailheader {
+    background: var(--bg); padding: 10px 14px;
+    display: none; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  #detailheader .title { font-size: 15px; font-weight: 700; color: var(--text); }
+
+  #content {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 72px;
+    overflow-y: auto; overflow-x: hidden; background: var(--bg);
+    -webkit-overflow-scrolling: touch;
+  }
+  #content::-webkit-scrollbar { display: none; }
+
+  .header-wrap { position: sticky; top: 0; z-index: 20; background: var(--bg); }
+
+  /* FIX: animação apenas no .screen.active (mais limpa e confiável) */
+  .screen { display: none; padding: 14px 14px 24px; }
+  .screen.active { display: block; animation: screenIn .18s ease; }
+  @keyframes screenIn { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+
+  #bottomnav {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 72px;
+    background: #0a0a0a; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 0 6px; z-index: 30;
+  }
+  .nav-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: none; border: none; cursor: pointer; padding: 6px 10px; border-radius: 10px;
+  }
+  .nav-btn i { font-size: 22px; color: #444; transition: color .2s; }
+  .nav-btn span { font-size: 9px; color: #444; font-weight: 600; font-family: inherit; transition: color .2s; }
+  .nav-btn.active i, .nav-btn.active span { color: var(--y); }
+
+  #fab { position: absolute; bottom: 84px; right: 14px; z-index: 40; }
+  #fab-btn {
+    width: 50px; height: 50px; border-radius: 25px;
+    background: var(--y); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #000; font-size: 24px;
+    box-shadow: 0 4px 20px rgba(245,194,0,0.35); transition: transform .15s;
+  }
+  #fab-btn:active { transform: scale(0.92); }
+  #fab-menu {
+    position: absolute; bottom: 58px; right: 0;
+    background: var(--card); border-radius: var(--r-lg);
+    padding: 8px; min-width: 200px; border: 1px solid var(--border); display: none;
+  }
+  #fab-menu.open { display: block; animation: fadeUp .18s ease; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .fab-item {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 10px 12px; background: none; border: none; color: var(--text);
+    cursor: pointer; border-radius: 10px; font-size: 13px; font-weight: 500; font-family: inherit;
+    transition: background .12s;
+  }
+  .fab-item:hover { background: var(--card2); }
+  .fab-item i { color: var(--y); font-size: 16px; }
+
+  #toast {
+    position: absolute; bottom: 86px; left: 50%; transform: translateX(-50%);
+    background: #2a2a2a; color: #fff; padding: 10px 18px; border-radius: 12px;
+    font-size: 13px; font-weight: 600; opacity: 0; transition: opacity .25s;
+    z-index: 100; white-space: nowrap; pointer-events: none;
+    border: 1px solid var(--border);
+  }
+  #toast.show { opacity: 1; }
+
+  .card { background: var(--card); border-radius: var(--r-lg); padding: 14px 16px; margin-bottom: 10px; }
+  .card-clickable { cursor: pointer; transition: opacity .15s; }
+  .card-clickable:active { opacity: 0.7; }
+
+  .badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; white-space: nowrap; display: inline-block; }
+
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .stat-card { background: var(--card); border-radius: var(--r-lg); padding: 14px; }
+  .stat-label { color: var(--sec); font-size: 11px; margin: 0 0 8px; line-height: 1.3; }
+  .stat-val { font-size: 24px; font-weight: 800; margin: 0; font-family: 'Syne', sans-serif; }
+
+  .btn-big {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px 20px; border-radius: var(--r-md); border: none;
+    font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; font-family: inherit;
+    transition: opacity .15s, transform .12s; margin-bottom: 8px;
+  }
+  .btn-big:active { opacity: 0.85; transform: scale(0.98); }
+  .btn-yellow { background: var(--y); color: #000; }
+  .btn-wa { background: var(--wa); color: #fff; }
+  .btn-dark { background: var(--card2); color: var(--text); }
+
+  .action-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .action-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+    padding: 12px 8px; border-radius: var(--r-md); border: none; cursor: pointer; flex: 1;
+    font-size: 11px; font-weight: 700; font-family: inherit; transition: opacity .15s;
+  }
+  .action-btn:active { opacity: 0.7; }
+  .action-btn i { font-size: 22px; }
+  .action-wa { background: var(--wa-dim); color: var(--wa); }
+  .action-call { background: var(--card); color: var(--text); }
+  .action-maps { background: var(--blu-dim); color: var(--blu); }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    background: var(--card); color: var(--sec); border: none; border-radius: 20px;
+    padding: 7px 14px; font-size: 12px; font-weight: 700;
+    cursor: pointer; white-space: nowrap; font-family: inherit; transition: background .12s, color .12s;
+  }
+  .tab.active { background: var(--y); color: #000; }
+
+  .search-wrap {
+    display: flex; align-items: center; background: var(--card);
+    border-radius: var(--r-md); padding: 0 14px; margin-bottom: 14px;
+  }
+  .search-wrap i { font-size: 17px; color: var(--sec); }
+  .search-wrap input {
+    background: none; border: none; outline: none; color: var(--text);
+    font-size: 14px; padding: 12px 10px; flex: 1; font-family: inherit;
+  }
+  .search-wrap input::placeholder { color: var(--sec); }
+
+  .avatar {
+    width: 42px; height: 42px; border-radius: 21px;
+    background: rgba(245,194,0,0.15);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--y); font-size: 14px; font-weight: 800;
+    flex-shrink: 0; font-family: 'Syne', sans-serif;
+  }
+  .avatar.big { width: 64px; height: 64px; border-radius: 32px; font-size: 20px; margin: 0 auto 12px; }
+
+  .checklist-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; cursor: pointer;
+    border-bottom: 1px solid var(--border); transition: background .1s;
+  }
+  .checklist-item:last-child { border-bottom: none; }
+  .checklist-item:active { background: var(--card2); }
+  .check-circle {
+    width: 24px; height: 24px; border-radius: 12px;
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all .2s;
+  }
+  .check-circle.done { background: var(--y); border-color: var(--y); }
+  .check-circle.done i { color: #000; font-size: 12px; }
+  .check-label { font-size: 14px; color: var(--text); transition: color .2s; }
+  .check-label.done { color: var(--sec); text-decoration: line-through; }
+
+  .progress-bg { background: var(--card2); border-radius: 8px; height: 6px; margin-bottom: 5px; }
+  .progress-fill { background: var(--y); border-radius: 8px; height: 6px; transition: width .35s ease; }
+
+  .section-label { color: var(--sec); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px; }
+
+  .empty { text-align: center; padding: 40px 0; color: var(--sec); font-size: 14px; }
+  .empty i { font-size: 40px; display: block; margin-bottom: 8px; }
+
+  input[type=range] { accent-color: var(--y); width: 100%; }
+
+  .volt-btn {
+    flex: 1; padding: 10px; border-radius: var(--r-sm);
+    background: var(--card2); color: var(--sec); border: none; cursor: pointer;
+    font-weight: 700; font-size: 15px; font-family: 'Syne', sans-serif; transition: all .15s;
+  }
+  .volt-btn.active { background: var(--y); color: #000; }
+
+  .converter-result { background: rgba(245,194,0,0.1); border-radius: var(--r-md); padding: 16px; text-align: center; }
+
+  .bitola-row { display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-bottom: 1px solid var(--border); }
+  .bitola-row:last-child { border-bottom: none; }
+  .bitola-tag { background: var(--y-dim); border-radius: 8px; padding: 5px 8px; min-width: 58px; text-align: center; color: var(--y); font-size: 12px; font-weight: 800; font-family: 'Syne', sans-serif; }
+  .amp-tag { background: var(--grn-dim); border-radius: 8px; padding: 5px 9px; color: var(--grn); font-size: 12px; font-weight: 800; font-family: 'Syne', sans-serif; }
+
+  .sep { border-top: 1px solid var(--border); padding-top: 10px; margin-top: 4px; }
+  .obra-card { border-left: 3px solid; }
+
+  .wa-inline {
+    background: var(--wa-dim); border: none; border-radius: 10px; padding: 9px 10px;
+    cursor: pointer; color: var(--wa); display: flex; align-items: center; transition: opacity .15s;
+  }
+  .wa-inline:active { opacity: 0.7; }
+  .wa-inline i { font-size: 18px; }
+
+  .pago-inline {
+    background: var(--grn-dim); border: none; border-radius: 10px; padding: 9px 10px;
+    cursor: pointer; color: var(--grn); display: flex; align-items: center;
+    font-size: 11px; font-weight: 700; font-family: inherit; gap: 4px; transition: opacity .15s;
+  }
+  .pago-inline:active { opacity: 0.7; }
+
+  .maps-inline {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px; border-radius: var(--r-md); background: var(--blu-dim); border: none;
+    color: var(--blu); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity .15s;
+  }
+  .maps-inline:active { opacity: 0.7; }
+
+  .wa-big {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px; border-radius: var(--r-md); background: var(--wa-dim); border: none;
+    color: var(--wa); font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity .15s;
+  }
+  .wa-big:active { opacity: 0.7; }
+
+  h2.page-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); margin: 0 0 12px; }
+
+  .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .quick-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 16px; border-radius: var(--r-lg); border: none; cursor: pointer;
+    font-family: inherit; font-weight: 700; font-size: 12px; transition: opacity .15s;
+  }
+  .quick-btn:active { opacity: 0.75; }
+  .quick-btn i { font-size: 26px; }
+  .quick-yellow { background: var(--y-dim); color: var(--y); }
+  .quick-dark { background: var(--card2); color: var(--text); }
+
+  .hdr-btn {
+    border: none; border-radius: 12px; width: 40px; height: 40px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity .15s;
+  }
+  .hdr-btn:active { opacity: 0.7; }
+
+  /* Financeiro: evita overflow dos botões em cards com nomes longos */
+  .fin-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .fin-left { flex: 1; min-width: 0; overflow: hidden; }
+  .fin-left p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+<div id="phone">
+
+  <div id="content">
+    <div class="header-wrap">
+      <div id="statusbar">
+        <span class="time" id="clock">9:41</span>
+        <div class="sb-icons">
+          <i class="ti ti-signal-4g"></i>
+          <i class="ti ti-wifi"></i>
+          <i class="ti ti-battery-2"></i>
+        </div>
+      </div>
+      <div id="appheader">
+        <span class="logo">⚡ VOLT</span>
+        <div style="display:flex;gap:8px;">
+          <button class="hdr-btn" style="background:var(--y-dim);color:var(--y);" onclick="navTo('utilidades')">
+            <i class="ti ti-bolt" style="font-size:20px;"></i>
+          </button>
+          <button class="hdr-btn" style="background:var(--card2);color:var(--text);" onclick="showToast('Sem notificações novas')">
+            <i class="ti ti-bell" style="font-size:20px;"></i>
+          </button>
+        </div>
+      </div>
+      <div id="detailheader">
+        <button onclick="goBack()" style="background:var(--card);border:none;border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);flex-shrink:0;">
+          <i class="ti ti-arrow-left" style="font-size:18px;"></i>
+        </button>
+        <span class="title" id="detailTitle"></span>
+      </div>
+    </div>
+
+    <!-- HOME -->
+    <div class="screen active" id="s-home">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+        <div>
+          <p style="color:var(--sec);font-size:12px;margin:0;" id="home-greeting">Bom dia 👋</p>
+          <h2 style="font-family:'Syne',sans-serif;font-size:22px;font-weight:900;margin:2px 0 0;color:var(--text);">Rodrigo</h2>
+        </div>
+      </div>
+      <!-- FIX: stats renderizados dinamicamente via renderHomeStats() -->
+      <div class="stats-grid" id="home-stats"></div>
+      <p class="section-label">Próximos serviços</p>
+      <div id="home-obras"></div>
+      <p class="section-label" style="margin-top:14px;">Ações rápidas</p>
+      <div class="quick-grid">
+        <!-- FIX: navToRoot() — limpam o histórico de navegação -->
+        <button class="quick-btn quick-yellow" onclick="navToRoot('orcamentos')">
+          <i class="ti ti-file-plus"></i>Novo orçamento
+        </button>
+        <button class="quick-btn quick-dark" onclick="navToRoot('clientes')">
+          <i class="ti ti-user-plus"></i>Novo cliente
+        </button>
+      </div>
+    </div>
+
+    <!-- CLIENTES -->
+    <div class="screen" id="s-clientes">
+      <h2 class="page-title">Clientes</h2>
+      <div class="search-wrap">
+        <i class="ti ti-search"></i>
+        <input type="text" id="searchInput" placeholder="Buscar cliente..." oninput="renderClients(this.value)">
+      </div>
+      <div id="clients-list"></div>
+    </div>
+
+    <!-- CLIENTE DETAIL -->
+    <div class="screen" id="s-cliente-detail">
+      <div class="card" style="text-align:center;margin-bottom:10px;">
+        <div class="avatar big" id="cd-avatar"></div>
+        <p style="color:var(--text);font-size:18px;font-weight:800;margin:0 0 4px;font-family:'Syne',sans-serif;" id="cd-name"></p>
+        <p style="color:var(--sec);font-size:12px;margin:0;" id="cd-addr"></p>
+      </div>
+      <div class="action-row">
+        <button class="action-btn action-wa" id="cd-wa-btn"><i class="ti ti-brand-whatsapp"></i>WhatsApp</button>
+        <button class="action-btn action-call" id="cd-call-btn"><i class="ti ti-phone"></i>Ligar</button>
+        <button class="action-btn action-maps" id="cd-maps-btn"><i class="ti ti-map-pin"></i>Maps</button>
+      </div>
+      <button class="btn-big btn-yellow" id="cd-orc-btn">
+        <i class="ti ti-file-plus" style="font-size:18px;"></i> Criar Orçamento
+      </button>
+      <p class="section-label">Histórico de orçamentos</p>
+      <div id="cd-history"></div>
+    </div>
+
+    <!-- ORÇAMENTOS -->
+    <div class="screen" id="s-orcamentos">
+      <h2 class="page-title">Orçamentos</h2>
+      <div class="tabs" id="orc-tabs">
+        <button class="tab active" onclick="setOrcTab('todos',this)">Todos</button>
+        <button class="tab" onclick="setOrcTab('pendente',this)">Pendente</button>
+        <button class="tab" onclick="setOrcTab('aprovado',this)">Aprovado</button>
+        <button class="tab" onclick="setOrcTab('concluido',this)">Concluído</button>
+      </div>
+      <div id="orc-list"></div>
+    </div>
+
+    <!-- ORÇAMENTO DETAIL -->
+    <div class="screen" id="s-orcamento-detail">
+      <div class="card" style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+          <div>
+            <p style="color:var(--sec);font-size:11px;margin:0 0 2px;">Cliente</p>
+            <p style="color:var(--text);font-weight:800;font-size:17px;margin:0;font-family:'Syne',sans-serif;" id="od-client"></p>
+            <p style="color:var(--sec);font-size:11px;margin:4px 0 0;" id="od-date"></p>
+          </div>
+          <span id="od-badge" class="badge"></span>
+        </div>
+        <p style="color:var(--sec);font-size:11px;margin:0 0 10px;text-transform:uppercase;letter-spacing:.8px;">Itens do orçamento</p>
+        <div id="od-items"></div>
+        <div class="sep" style="display:flex;justify-content:space-between;align-items:center;">
+          <p style="color:var(--sec);font-size:14px;margin:0;">Total</p>
+          <p style="color:var(--y);font-size:22px;font-weight:800;margin:0;font-family:'Syne',sans-serif;" id="od-total"></p>
+        </div>
+      </div>
+      <button class="btn-big btn-wa" id="od-wa-btn">
+        <i class="ti ti-brand-whatsapp" style="font-size:20px;"></i> Enviar no WhatsApp
+      </button>
+      <button class="btn-big btn-dark" onclick="showToast('Gerando PDF... 📄')">
+        <i class="ti ti-file-download" style="font-size:18px;"></i> Gerar PDF
+      </button>
+    </div>
+
+    <!-- OBRAS -->
+    <div class="screen" id="s-obras">
+      <h2 class="page-title">Obras</h2>
+      <div class="tabs" id="obras-tabs">
+        <button class="tab active" onclick="setObrasTab('hoje',this)">Hoje</button>
+        <button class="tab" onclick="setObrasTab('proximos',this)">Próximos</button>
+        <button class="tab" onclick="setObrasTab('concluidos',this)">Concluídos</button>
+      </div>
+      <div id="obras-list"></div>
+    </div>
+
+    <!-- OBRA DETAIL -->
+    <div class="screen" id="s-obra-detail">
+      <div class="card" style="margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+          <div>
+            <p style="color:var(--text);font-size:17px;font-weight:800;margin:0 0 2px;font-family:'Syne',sans-serif;" id="ob-name"></p>
+            <p style="color:var(--y);font-size:13px;margin:0 0 2px;font-weight:600;" id="ob-dt"></p>
+            <p style="color:var(--sec);font-size:12px;margin:0;" id="ob-desc"></p>
+          </div>
+          <span id="ob-badge" class="badge"></span>
+        </div>
+        <div class="progress-bg"><div class="progress-fill" id="ob-progress" style="width:0%"></div></div>
+        <p style="color:var(--sec);font-size:11px;margin:0;" id="ob-prog-label"></p>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px;">
+        <button class="maps-inline" id="ob-maps-btn">
+          <i class="ti ti-map-pin" style="font-size:18px;"></i> Localização
+        </button>
+        <button class="wa-big" id="ob-wa-btn">
+          <i class="ti ti-brand-whatsapp" style="font-size:18px;"></i> WhatsApp
+        </button>
+      </div>
+      <p class="section-label">Checklist da obra</p>
+      <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px;" id="ob-checklist"></div>
+      <button class="btn-big btn-yellow" id="ob-finalizar-btn" onclick="finalizarObra()">
+        <i class="ti ti-check" style="font-size:18px;"></i> Finalizar Serviço
+      </button>
+    </div>
+
+    <!-- FINANCEIRO -->
+    <div class="screen" id="s-financeiro">
+      <h2 class="page-title">Financeiro</h2>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <p class="stat-label">Hoje</p>
+          <p class="stat-val" style="color:var(--grn);">R$260</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Semana</p>
+          <p class="stat-val" style="color:var(--blu);">R$750</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">Mês</p>
+          <p class="stat-val" style="color:var(--y);">R$3.200</p>
+        </div>
+        <div class="stat-card">
+          <p class="stat-label">A receber</p>
+          <p class="stat-val" style="color:var(--red);" id="fin-pendente-val">R$810</p>
+        </div>
+      </div>
+      <p class="section-label">Pagamentos</p>
+      <div id="fin-list"></div>
+    </div>
+
+    <!-- UTILIDADES -->
+    <div class="screen" id="s-utilidades">
+      <div style="background:rgba(245,194,0,0.06);border-radius:var(--r-lg);padding:16px;margin-bottom:14px;border:1px solid rgba(245,194,0,0.12);">
+        <p style="color:var(--y);font-size:12px;font-weight:700;margin:0 0 14px;text-transform:uppercase;letter-spacing:1px;font-family:'Syne',sans-serif;">Conversor W → A</p>
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+            <span style="color:var(--sec);font-size:12px;">Potência</span>
+            <span style="color:var(--text);font-size:13px;font-weight:700;font-family:'Syne',sans-serif;" id="watts-label">1000W</span>
+          </div>
+          <input type="range" min="100" max="5000" step="50" value="1000" id="watts-slider" oninput="updateConverter()">
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button class="volt-btn active" id="btn-127" onclick="setVoltage(127)">127V</button>
+          <button class="volt-btn" id="btn-220" onclick="setVoltage(220)">220V</button>
+        </div>
+        <div class="converter-result">
+          <p style="color:var(--sec);font-size:11px;margin:0 0 4px;">Corrente necessária</p>
+          <p style="color:var(--y);font-size:36px;font-weight:900;margin:0 0 4px;font-family:'Syne',sans-serif;" id="amp-result">7.9A</p>
+          <p style="color:var(--sec);font-size:11px;margin:0;" id="formula-label">1000W ÷ 127V = 7.87A</p>
+        </div>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden;">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+          <p style="color:var(--y);font-size:12px;font-weight:700;margin:0;text-transform:uppercase;letter-spacing:1px;font-family:'Syne',sans-serif;">Tabela de Bitolas</p>
+          <span style="color:var(--sec);font-size:11px;">NBR 5410</span>
+        </div>
+        <div class="bitola-row"><span class="bitola-tag">1,5 mm²</span><span style="flex:1;font-size:12px;color:var(--text);line-height:1.3;">Iluminação e tomadas leves</span><span class="amp-tag">15A</span></div>
+        <div class="bitola-row"><span class="bitola-tag">2,5 mm²</span><span style="flex:1;font-size:12px;color:var(--text);line-height:1.3;">Tomadas de uso geral</span><span class="amp-tag">21A</span></div>
+        <div class="bitola-row"><span class="bitola-tag">4 mm²</span><span style="flex:1;font-size:12px;color:var(--text);line-height:1.3;">Chuveiro / ar-condicionado</span><span class="amp-tag">27A</span></div>
+        <div class="bitola-row"><span class="bitola-tag">6 mm²</span><span style="flex:1;font-size:12px;color:var(--text);line-height:1.3;">Aparelhos de alto consumo</span><span class="amp-tag">35A</span></div>
+        <div class="bitola-row"><span class="bitola-tag">10 mm²</span><span style="flex:1;font-size:12px;color:var(--text);line-height:1.3;">Entrada de serviço e quadros</span><span class="amp-tag">50A</span></div>
+        <div class="bitola-row"><span class="bitola-tag">16 mm²</span><span style="flex:1;font-size:12px;color:var(--text);line-height:1.3;">Alimentação de quadros</span><span class="amp-tag">68A</span></div>
+        <div class="bitola-row"><span class="bitola-tag">25 mm²</span><span style="flex:1;font-size:12px;color:var(--text);line-height:1.3;">Ramais de distribuição</span><span class="amp-tag">89A</span></div>
+      </div>
+    </div>
+
+  </div><!-- end #content -->
+
+  <!-- FAB -->
+  <div id="fab">
+    <div id="fab-menu">
+      <!-- FIX: navToRoot() — limpam histórico ao acessar tela principal -->
+      <button class="fab-item" onclick="navToRoot('orcamentos')"><i class="ti ti-file-plus"></i> Novo orçamento</button>
+      <button class="fab-item" onclick="navToRoot('clientes')"><i class="ti ti-user-plus"></i> Novo cliente</button>
+      <button class="fab-item" onclick="navToRoot('obras')"><i class="ti ti-tool"></i> Nova obra</button>
+    </div>
+    <button id="fab-btn" onclick="toggleFab(event)">
+      <i class="ti ti-plus" id="fab-icon"></i>
+    </button>
+  </div>
+
+  <div id="toast"></div>
+
+  <!-- FIX: bottom nav usa navToRoot() para limpar histórico -->
+  <div id="bottomnav">
+    <button class="nav-btn active" id="nav-home" onclick="navToRoot('home')">
+      <i class="ti ti-home"></i><span>Início</span>
+    </button>
+    <button class="nav-btn" id="nav-clientes" onclick="navToRoot('clientes')">
+      <i class="ti ti-users"></i><span>Clientes</span>
+    </button>
+    <button class="nav-btn" id="nav-orcamentos" onclick="navToRoot('orcamentos')">
+      <i class="ti ti-file-text"></i><span>Orçamentos</span>
+    </button>
+    <button class="nav-btn" id="nav-obras" onclick="navToRoot('obras')">
+      <i class="ti ti-tool"></i><span>Obras</span>
+    </button>
+    <button class="nav-btn" id="nav-financeiro" onclick="navToRoot('financeiro')">
+      <i class="ti ti-cash"></i><span>Financeiro</span>
+    </button>
+  </div>
+
+</div>
+
+<script>
+// ===================== DADOS =====================
+const clients = [
+  {id:1, name:'João Silva',    phone:'54991234567', addr:'Rua das Flores, 123, Caxias do Sul',      last:'12/05'},
+  {id:2, name:'Maria Santos',  phone:'54992345678', addr:'Av. Brasil, 456, Caxias do Sul',           last:'03/05'},
+  {id:3, name:'Carlos Oliveira',phone:'54993456789',addr:'Rua Sinimbu, 789, Caxias do Sul',          last:'28/04'},
+  {id:4, name:'Ana Lima',      phone:'54994567890', addr:'Rua Bento Gonçalves, 321, Caxias do Sul',  last:'20/04'},
+];
+
+const orcamentos = [
+  {id:1,cid:1,desc:'Troca de disjuntor + tomadas',    items:[{d:'Troca de disjuntor',q:1,v:80},{d:'Instalação de tomadas',q:3,v:60}],total:260,st:'pendente', date:'20/05/2025'},
+  {id:2,cid:2,desc:'Instalação de ventilador',        items:[{d:'Instalação de ventilador',q:1,v:150}],                             total:150,st:'aprovado',  date:'18/05/2025'},
+  {id:3,cid:3,desc:'Quadro de distribuição',          items:[{d:'Quadro 12 disjuntores',q:1,v:350},{d:'Mão de obra',q:1,v:200}],    total:550,st:'concluido', date:'15/05/2025'},
+  {id:4,cid:4,desc:'Instalação de chuveiro 220v',     items:[{d:'Instalação de chuveiro 220v',q:1,v:120}],                          total:120,st:'recusado',  date:'10/05/2025'},
+];
+
+// obras é mutável (precisamos alterar .st ao finalizar)
+const obras = [
+  {id:1,cid:1,addr:'Rua das Flores, 123, Caxias do Sul',   dt:'Hoje, 14:00',  st:'em_andamento',desc:'Troca de disjuntor + tomadas',
+   cl:[{t:'Desligar energia',d:true},{t:'Instalar disjuntor',d:true},{t:'Instalar tomadas',d:false},{t:'Testar instalação',d:false},{t:'Finalizar',d:false}]},
+  {id:2,cid:2,addr:'Av. Brasil, 456, Caxias do Sul',        dt:'Amanhã, 09:00',st:'pendente',    desc:'Instalação de ventilador',
+   cl:[{t:'Desligar energia',d:false},{t:'Montar ventilador',d:false},{t:'Fazer conexões',d:false},{t:'Testar',d:false}]},
+  {id:3,cid:3,addr:'Rua Sinimbu, 789, Caxias do Sul',       dt:'Seg, 10:00',   st:'pendente',    desc:'Quadro de distribuição',
+   cl:[{t:'Desligar energia geral',d:false},{t:'Instalar quadro',d:false},{t:'Alocar disjuntores',d:false},{t:'Testar circuitos',d:false}]},
+];
+
+let finLista = [
+  {id:1,cid:3,val:550,venc:'15/05',st:'atrasado'},
+  {id:2,cid:1,val:260,venc:'25/05',st:'pendente'},
+  {id:3,cid:2,val:150,venc:'20/05',st:'pago'},
+  {id:4,cid:4,val:120,venc:'18/05',st:'pago'},
+];
+
+// ===================== STATE =====================
+let checks = {};
+obras.forEach(o => { checks[o.id] = o.cl.map(c => c.d); });
+
+let currentScreen  = 'home';
+let currentOrcTab  = 'todos';
+let currentObrasTab= 'hoje';
+let currentObraId  = null;
+let voltageVal     = 127;
+let fabOpen        = false;
+let finalizarTimer = null;
+
+// FIX: stack de navegação para goBack() funcionar corretamente em qualquer fluxo
+let navHistory = []; // [{screen, title}]
+
+// ===================== HELPERS =====================
+const stColor = st => ({
+  pendente:'#F5C200', aprovado:'#4ADE80', concluido:'#60A5FA',
+  recusado:'#F87171', atrasado:'#F87171', pago:'#4ADE80',
+  em_andamento:'#FB923C', ativo:'#4ADE80'
+}[st] || '#666');
+
+const stLabel = st => ({
+  pendente:'Pendente', aprovado:'Aprovado', concluido:'Concluído',
+  recusado:'Recusado', atrasado:'Atrasado', pago:'Pago',
+  em_andamento:'Em andamento', ativo:'Ativo'
+}[st] || st);
+
+const gc       = id => clients.find(c => c.id === id);
+const initials = name => name.split(' ').map(n => n[0]).join('').slice(0,2);
+
+const setBadge = (el, st) => {
+  el.textContent    = stLabel(st);
+  el.style.background = stColor(st) + '22';
+  el.style.color      = stColor(st);
+};
+
+const wa       = (phone, msg) => window.open('https://wa.me/55'+phone+'?text='+encodeURIComponent(msg));
+const openMaps = addr          => window.open('https://maps.google.com/?q='+encodeURIComponent(addr));
+const calcPendente = ()        => finLista.filter(p => p.st !== 'pago').reduce((s,p) => s+p.val, 0);
+
+// ===================== TOAST =====================
+let toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ===================== RELÓGIO =====================
+// FIX: intervalo 60s (minuto-a-minuto é suficiente)
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+}
+updateClock();
+setInterval(updateClock, 60000);
+
+// Saudação dinâmica
+(function() {
+  const h = new Date().getHours();
+  const s = h < 12 ? 'Bom dia 👋' : h < 18 ? 'Boa tarde 👋' : 'Boa noite 👋';
+  document.getElementById('home-greeting').textContent = s;
+})();
+
+// ===================== TELAS =====================
+const DETAIL_SCREENS = ['cliente-detail','orcamento-detail','obra-detail','utilidades'];
+const DETAIL_PARENT  = {'cliente-detail':'clientes','orcamento-detail':'orcamentos','obra-detail':'obras','utilidades':'home'};
+
+/**
+ * _applyScreen — aplica a mudança de tela sem mexer no histórico.
+ * @param {string} screen   - ID da tela destino
+ * @param {string} [title]  - título do detailheader (opcional; se omitido mantém o atual)
+ */
+function _applyScreen(screen, title) {
+  // FIX: cancela o auto-goBack do finalizarObra se o usuário navegar manualmente
+  clearTimeout(finalizarTimer);
+  closeFab();
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('s-'+screen).classList.add('active');
+
+  const isDetail = DETAIL_SCREENS.includes(screen);
+  document.getElementById('appheader').style.display   = isDetail ? 'none' : 'flex';
+  document.getElementById('detailheader').style.display= isDetail ? 'flex' : 'none';
+  document.getElementById('fab').style.display         = isDetail ? 'none' : 'block';
+
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+(DETAIL_PARENT[screen]||screen));
+  if(navEl) navEl.classList.add('active');
+
+  if(isDetail && title !== undefined) {
+    document.getElementById('detailTitle').textContent = title;
+  }
+
+  document.getElementById('content').scrollTop = 0;
+  currentScreen = screen;
+
+  // Renderiza dados da tela
+  if(screen === 'home')       { renderHomeStats(); renderHomeObras(); }
+  if(screen === 'clientes')   { document.getElementById('searchInput').value = ''; renderClients(''); }
+  if(screen === 'orcamentos') renderOrcamentos(currentOrcTab);
+  if(screen === 'obras')      renderObras(currentObrasTab);
+  if(screen === 'financeiro') renderFinanceiro();
+}
+
+/**
+ * navTo — navega para uma tela EMPURRANDO a atual no histórico.
+ * Use para abrir detalhes (openCliente, openObra, ⚡ utilitários).
+ */
+function navTo(screen, title) {
+  if(currentScreen && currentScreen !== screen) {
+    navHistory.push({
+      screen: currentScreen,
+      title: DETAIL_SCREENS.includes(currentScreen)
+        ? document.getElementById('detailTitle').textContent
+        : ''
+    });
+  }
+  _applyScreen(screen, title);
+}
+
+/**
+ * navToRoot — navega para uma tela RAIZ limpando o histórico.
+ * Use na bottom nav, FAB e ações rápidas da home.
+ */
+function navToRoot(screen) {
+  navHistory = [];
+  _applyScreen(screen);
+}
+
+/**
+ * goBack — volta usando o histórico de navegação.
+ */
+function goBack() {
+  if(navHistory.length > 0) {
+    const entry = navHistory.pop();
+    _applyScreen(entry.screen, entry.title);
+  }
+}
+
+// ===================== FAB =====================
+function toggleFab(e) {
+  if(e) e.stopPropagation();
+  fabOpen = !fabOpen;
+  document.getElementById('fab-menu').classList.toggle('open', fabOpen);
+  document.getElementById('fab-icon').className = fabOpen ? 'ti ti-x' : 'ti ti-plus';
+}
+function closeFab() {
+  fabOpen = false;
+  document.getElementById('fab-menu').classList.remove('open');
+  document.getElementById('fab-icon').className = 'ti ti-plus';
+}
+document.addEventListener('click', e => {
+  if(fabOpen && !document.getElementById('fab').contains(e.target)) closeFab();
+});
+
+// ===================== HOME =====================
+// FIX: stats calculados a partir dos dados reais
+function renderHomeStats() {
+  const hoje      = obras.filter(o => o.dt.startsWith('Hoje') && o.st !== 'concluido').length;
+  const pendOrcs  = orcamentos.filter(o => o.st === 'pendente').length;
+  const aReceber  = calcPendente();
+  const concluidos= obras.filter(o => o.st === 'concluido').length;
+
+  document.getElementById('home-stats').innerHTML = `
+    <div class="stat-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <p class="stat-label">Serviços hoje</p>
+        <i class="ti ti-tool" style="font-size:15px;color:var(--y);"></i>
+      </div>
+      <p class="stat-val" style="color:var(--y);">${hoje}</p>
+    </div>
+    <div class="stat-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <p class="stat-label">Orç. pendentes</p>
+        <i class="ti ti-file-text" style="font-size:15px;color:var(--blu);"></i>
+      </div>
+      <p class="stat-val" style="color:var(--blu);">${pendOrcs}</p>
+    </div>
+    <div class="stat-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <p class="stat-label">A receber</p>
+        <i class="ti ti-cash" style="font-size:15px;color:var(--grn);"></i>
+      </div>
+      <p class="stat-val" style="color:var(--grn);">R$${aReceber}</p>
+    </div>
+    <div class="stat-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <p class="stat-label">Concluídos mês</p>
+        <i class="ti ti-check" style="font-size:15px;color:var(--pur);"></i>
+      </div>
+      <p class="stat-val" style="color:var(--pur);">${concluidos}</p>
+    </div>`;
+}
+
+// FIX: filtra obras concluídas (não devem aparecer em "Próximos serviços")
+function renderHomeObras() {
+  const ativos = obras.filter(o => o.st !== 'concluido').slice(0, 2);
+  document.getElementById('home-obras').innerHTML = ativos.length
+    ? ativos.map(o => `
+        <div class="card card-clickable obra-card" style="border-color:${stColor(o.st)};" onclick="openObra(${o.id})">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <p style="color:var(--text);font-weight:700;margin:0 0 3px;font-size:15px;">${gc(o.cid).name}</p>
+              <p style="color:var(--y);font-size:12px;margin:0 0 3px;font-weight:600;">${o.dt}</p>
+              <p style="color:var(--sec);font-size:11px;margin:0;"><i class="ti ti-map-pin" style="font-size:11px;"></i> ${o.addr.split(',')[0]}</p>
+            </div>
+            <span class="badge" style="background:${stColor(o.st)}22;color:${stColor(o.st)};">${stLabel(o.st)}</span>
+          </div>
+        </div>`).join('')
+    : '<div class="empty" style="padding:20px 0;"><i class="ti ti-calendar-check"></i>Nenhum serviço pendente</div>';
+}
+
+// ===================== CLIENTES =====================
+function renderClients(filter) {
+  const filtered = clients.filter(c => c.name.toLowerCase().includes((filter||'').toLowerCase()));
+  document.getElementById('clients-list').innerHTML = filtered.length
+    ? filtered.map(c => `
+        <div class="card card-clickable" onclick="openCliente(${c.id})" style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="avatar">${initials(c.name)}</div>
+            <div>
+              <p style="color:var(--text);font-weight:700;margin:0 0 2px;font-size:15px;">${c.name}</p>
+              <p style="color:var(--sec);font-size:11px;margin:0;">Último serviço: ${c.last}</p>
+            </div>
+          </div>
+          <i class="ti ti-chevron-right" style="color:var(--sec);font-size:18px;"></i>
+        </div>`).join('')
+    : '<div class="empty"><i class="ti ti-user-off"></i>Nenhum cliente encontrado</div>';
+}
+
+function openCliente(id) {
+  const c = gc(id);
+
+  document.getElementById('cd-avatar').textContent = initials(c.name);
+  document.getElementById('cd-name').textContent   = c.name;
+  document.getElementById('cd-addr').textContent   = c.addr;
+
+  const msg = `Olá ${c.name.split(' ')[0]}, tudo bem? Aqui é o Rodrigo eletricista. Em que posso ajudar?`;
+  document.getElementById('cd-wa-btn').onclick   = () => wa(c.phone, msg);
+  document.getElementById('cd-call-btn').onclick = () => window.open('tel:+55'+c.phone);
+  document.getElementById('cd-maps-btn').onclick = () => openMaps(c.addr);
+  // "Criar Orçamento" vai para a lista de orçamentos, mas empurra cliente-detail no histórico
+  document.getElementById('cd-orc-btn').onclick  = () => navTo('orcamentos');
+
+  const hist = orcamentos.filter(o => o.cid === id);
+  document.getElementById('cd-history').innerHTML = hist.length
+    ? hist.map(o => `
+        <div class="card card-clickable" onclick="openOrcamento(${o.id})">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <p style="color:var(--text);font-size:14px;margin:0 0 3px;font-weight:600;">${o.desc}</p>
+              <p style="color:var(--sec);font-size:11px;margin:0;">${o.date} · R$${o.total}</p>
+            </div>
+            <span class="badge" style="background:${stColor(o.st)}22;color:${stColor(o.st)};">${stLabel(o.st)}</span>
+          </div>
+        </div>`).join('')
+    : '<p style="color:var(--sec);font-size:13px;padding:8px 0;">Nenhum orçamento encontrado.</p>';
+
+  navTo('cliente-detail', c.name);
+}
+
+// ===================== ORÇAMENTOS =====================
+function setOrcTab(tab, el) {
+  document.querySelectorAll('#orc-tabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentOrcTab = tab;
+  renderOrcamentos(tab);
+}
+
+function renderOrcamentos(tab) {
+  const filtered = tab === 'todos' ? orcamentos : orcamentos.filter(o => o.st === tab);
+  document.getElementById('orc-list').innerHTML = filtered.length
+    ? filtered.map(o => `
+        <div class="card card-clickable" onclick="openOrcamento(${o.id})">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <p style="color:var(--text);font-weight:700;margin:0 0 3px;font-size:15px;">${gc(o.cid).name}</p>
+              <p style="color:var(--sec);font-size:12px;margin:0 0 2px;">${o.desc}</p>
+              <p style="color:var(--sec);font-size:11px;margin:0;">${o.date}</p>
+            </div>
+            <div style="text-align:right;">
+              <p style="color:var(--y);font-size:17px;font-weight:800;margin:0 0 6px;font-family:'Syne',sans-serif;">R$${o.total}</p>
+              <span class="badge" style="background:${stColor(o.st)}22;color:${stColor(o.st)};">${stLabel(o.st)}</span>
+            </div>
+          </div>
+        </div>`).join('')
+    : '<div class="empty"><i class="ti ti-file-off"></i>Nenhum orçamento aqui</div>';
+}
+
+function openOrcamento(id) {
+  const o = orcamentos.find(x => x.id === id);
+  const c = gc(o.cid);
+
+  document.getElementById('od-client').textContent = c.name;
+  document.getElementById('od-date').textContent   = o.date;
+  setBadge(document.getElementById('od-badge'), o.st);
+  document.getElementById('od-total').textContent  = 'R$' + o.total;
+  document.getElementById('od-items').innerHTML = o.items.map(it => `
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+      <p style="color:var(--text);font-size:14px;margin:0;">${it.d} <span style="color:var(--sec);">×${it.q}</span></p>
+      <p style="color:var(--text);font-size:14px;font-weight:700;margin:0;font-family:'Syne',sans-serif;">R$${it.v*it.q}</p>
+    </div>`).join('');
+
+  const msg = `Olá ${c.name.split(' ')[0]} 👋\nSeu orçamento está pronto!\n\n📋 *${o.desc}*\n\n${o.items.map(i=>`• ${i.d}: R$${i.v*i.q}`).join('\n')}\n\n💰 *Total: R$${o.total}*\n\n⏳ Validade: 5 dias. Qualquer dúvida, estou à disposição!`;
+  document.getElementById('od-wa-btn').onclick = () => wa(c.phone, msg);
+
+  navTo('orcamento-detail', 'Orçamento — ' + c.name.split(' ')[0]);
+}
+
+// ===================== OBRAS =====================
+function setObrasTab(tab, el) {
+  document.querySelectorAll('#obras-tabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentObrasTab = tab;
+  renderObras(tab);
+}
+
+// FIX: obras concluídas saem dos tabs Hoje/Próximos e vão para Concluídos
+function renderObras(tab) {
+  const shown =
+    tab === 'hoje'      ? obras.filter(o => o.dt.startsWith('Hoje') && o.st !== 'concluido') :
+    tab === 'proximos'  ? obras.filter(o => !o.dt.startsWith('Hoje') && o.st !== 'concluido') :
+    tab === 'concluidos'? obras.filter(o => o.st === 'concluido') : [];
+
+  document.getElementById('obras-list').innerHTML = shown.length
+    ? shown.map(o => `
+        <div class="card card-clickable obra-card" style="border-color:${stColor(o.st)};" onclick="openObra(${o.id})">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <p style="color:var(--text);font-weight:700;margin:0 0 2px;font-size:15px;">${gc(o.cid).name}</p>
+              <p style="color:var(--y);font-size:13px;margin:0 0 2px;font-weight:600;">${o.dt}</p>
+              <p style="color:var(--sec);font-size:11px;margin:0;"><i class="ti ti-map-pin" style="font-size:11px;"></i> ${o.addr.split(',')[0]}</p>
+            </div>
+            <span class="badge" style="background:${stColor(o.st)}22;color:${stColor(o.st)};">${stLabel(o.st)}</span>
+          </div>
+        </div>`).join('')
+    : '<div class="empty"><i class="ti ti-mood-empty"></i>Nenhuma obra aqui</div>';
+}
+
+function openObra(id) {
+  const o = obras.find(x => x.id === id);
+  const c = gc(o.cid);
+  currentObraId = id;
+
+  document.getElementById('ob-name').textContent = c.name;
+  document.getElementById('ob-dt').textContent   = o.dt;
+  document.getElementById('ob-desc').textContent = o.desc;
+  setBadge(document.getElementById('ob-badge'), o.st);
+
+  // Esconde o botão finalizar se a obra já está concluída
+  const btnFinalizar = document.getElementById('ob-finalizar-btn');
+  btnFinalizar.style.display = o.st === 'concluido' ? 'none' : 'flex';
+
+  renderChecklist(id);
+
+  const waMsg = `Olá ${c.name.split(' ')[0]}, estou a caminho! Serviço: ${o.desc}. Chego às ${o.dt.split(', ')[1]}. Qualquer dúvida é só me chamar! 🔧`;
+  document.getElementById('ob-maps-btn').onclick = () => openMaps(o.addr);
+  document.getElementById('ob-wa-btn').onclick   = () => wa(c.phone, waMsg);
+
+  navTo('obra-detail', c.name);
+}
+
+function renderChecklist(obraId) {
+  const o  = obras.find(x => x.id === obraId);
+  const cl = checks[obraId];
+  const done = cl.filter(Boolean).length;
+  const pct  = Math.round((done / cl.length) * 100);
+
+  document.getElementById('ob-progress').style.width = pct + '%';
+  document.getElementById('ob-prog-label').textContent = `${done} de ${cl.length} etapas concluídas (${pct}%)`;
+
+  // Checklist não editável se obra já concluída
+  const concluded = o.st === 'concluido';
+  document.getElementById('ob-checklist').innerHTML = o.cl.map((item, i) => `
+    <div class="checklist-item" ${concluded ? '' : `onclick="toggleCheck(${obraId},${i})"`}
+         style="${concluded ? 'cursor:default;' : ''}">
+      <div class="check-circle ${cl[i] ? 'done' : ''}">
+        ${cl[i] ? '<i class="ti ti-check"></i>' : ''}
+      </div>
+      <span class="check-label ${cl[i] ? 'done' : ''}">${item.t}</span>
+    </div>`).join('');
+}
+
+function toggleCheck(obraId, i) {
+  checks[obraId][i] = !checks[obraId][i];
+  renderChecklist(obraId);
+}
+
+function finalizarObra() {
+  const cl      = checks[currentObraId];
+  const pending = cl.filter(v => !v).length;
+
+  if(pending > 0) {
+    showToast(`⚠️ Ainda há ${pending} etapa(s) pendente(s)`);
+    return;
+  }
+
+  // FIX: atualiza o status da obra para 'concluido'
+  const o = obras.find(x => x.id === currentObraId);
+  if(o) o.st = 'concluido';
+
+  // Atualiza badge e esconde botão sem re-navegar
+  setBadge(document.getElementById('ob-badge'), 'concluido');
+  document.getElementById('ob-finalizar-btn').style.display = 'none';
+  renderChecklist(currentObraId);
+
+  showToast('Serviço finalizado! ✅');
+
+  // FIX: timer armazenado — pode ser cancelado se o usuário navegar antes
+  clearTimeout(finalizarTimer);
+  finalizarTimer = setTimeout(() => goBack(), 1500);
+}
+
+// ===================== FINANCEIRO =====================
+function renderFinanceiro() {
+  document.getElementById('fin-pendente-val').textContent = 'R$' + calcPendente();
+  document.getElementById('fin-list').innerHTML = finLista.map(p => {
+    const c = gc(p.cid);
+    return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="fin-left">
+          <p style="color:var(--text);font-weight:700;margin:0 0 2px;font-size:15px;">${c.name}</p>
+          <p style="color:var(--sec);font-size:11px;margin:0;">Vence: ${p.venc}</p>
+        </div>
+        <div class="fin-right">
+          ${p.st !== 'pago' ? `
+            <button class="wa-inline" onclick="waCobranca(${p.id})" title="Cobrar via WhatsApp">
+              <i class="ti ti-brand-whatsapp"></i>
+            </button>
+            <button class="pago-inline" onclick="marcarPago(${p.id})">
+              <i class="ti ti-check" style="font-size:14px;"></i> Pago
+            </button>` : ''}
+          <div style="text-align:right;min-width:60px;">
+            <p style="color:var(--y);font-size:15px;font-weight:800;margin:0 0 4px;font-family:'Syne',sans-serif;">R$${p.val}</p>
+            <span class="badge" style="background:${stColor(p.st)}22;color:${stColor(p.st)};">${stLabel(p.st)}</span>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function waCobranca(id) {
+  const p = finLista.find(x => x.id === id);
+  const c = gc(p.cid);
+  const msg = `Olá ${c.name.split(' ')[0]}, tudo bem? 😊\n\nPassando para lembrar do pagamento de *R$${p.val}* referente ao serviço realizado.\n\nQuando puder, me confirma? Chave Pix: *54991234567*.\n\nObrigado! 🙏`;
+  wa(c.phone, msg);
+}
+
+function marcarPago(id) {
+  const p = finLista.find(x => x.id === id);
+  if(p) { p.st = 'pago'; renderFinanceiro(); showToast('Pagamento registrado! ✅'); }
+}
+
+// ===================== CONVERSOR =====================
+function updateConverter() {
+  const w = parseInt(document.getElementById('watts-slider').value);
+  const a = w / voltageVal;
+  document.getElementById('watts-label').textContent  = w + 'W';
+  document.getElementById('amp-result').textContent   = a.toFixed(1) + 'A';
+  document.getElementById('formula-label').textContent= `${w}W ÷ ${voltageVal}V = ${a.toFixed(2)}A`;
+}
+
+function setVoltage(v) {
+  voltageVal = v;
+  document.getElementById('btn-127').classList.toggle('active', v === 127);
+  document.getElementById('btn-220').classList.toggle('active', v === 220);
+  updateConverter();
+}
+
+// ===================== INIT =====================
+renderHomeStats();
+renderHomeObras();
+renderClients('');
+renderOrcamentos('todos');
+renderObras('hoje');
+renderFinanceiro();
+updateConverter();
+</script>
+</body>
 </html>
